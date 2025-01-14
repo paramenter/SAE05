@@ -1,0 +1,20 @@
+# Utiliser une image officielle Node.js
+FROM node:16
+
+# Créer un répertoire de travail
+WORKDIR /app
+
+# Copier les fichiers de backend dans le conteneur
+COPY backend/package.json backend/package-lock.json ./
+
+# Installer les dépendances
+RUN npm install
+
+# Copier tout le reste du dossier backend
+COPY backend/ .
+
+# Exposer le port configuré dans .env
+EXPOSE ${BACKEND_PORT}
+
+# Démarrer le serveur
+CMD ["node", "server.js"]
