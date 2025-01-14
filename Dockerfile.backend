@@ -9,6 +9,7 @@ COPY backend/package.json backend/package-lock.json ./
 
 # Installer les dépendances
 RUN npm install
+RUN npm install express
 
 # Copier tout le reste du dossier backend
 COPY backend/ .
