@@ -1,25 +1,25 @@
-version: '3'
-
 services:
-  mysql:
-    image: mysql:5.7
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
+  mariadb: # Nom du micro service de la BDD
+    image: mariadb:latest # Basé sur une image officielle mariadb (dockerhub)
+    restart: always # Politique de redémarrage lorsque le serveur redémarre 
     ports:
-      - "${MYSQL_PORT}:3306" 
+      - '${MYSQL_PORT}:3306' # Port mysql
+    environment: # variables d'environnement visibles à l'intérieur du conteneur "db_server" (requis pour mariadb)
+      MYSQL_ROOT_PASSWORD: '${MYSQL_ROOT_PASSWORD}'
+      MYSQL_USER: '${MYSQL_USER}'
+      MYSQL_PASSWORD: '${MYSQL_PASSWORD}'
+      MYSQL_DATABASE: '${MYSQL_DATABASE}'
     volumes:
-      - mysql_data:/var/lib/mysql
-      - ./bdd:/docker-entrypoint-initdb.d  
+      - ./db/data/:/var/lib/mysql # Le volume qui contiendra toutes les données persistentes de la BDD
+      - ./db/my.cnf:/etc/mysql/conf.d/my.cnf # fichier de conf mariadb
+      - ./db/init_schema.sql:/docker-entrypoint-initdb.d/init_schema.sql # script d'initialisation de la BDD (lancé au démarrage de mariadb)
     networks:
       - app-network
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     environment:
-      PMA_HOST: mysql
+      PMA_HOST: mariadb  # Change mysql en mariadb
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
       - "${PHP_MY_ADMIN_PORT}:80"
@@ -32,14 +32,14 @@ services:
       dockerfile: Dockerfile.backend
     environment:
       PORT: ${BACKEND_PORT}
-      MYSQL_HOST: mysql
-      MYSQL_PORT: ${MYSQL_PORT}  # Utilisez le port personnalisé ici
+      MYSQL_HOST: mariadb  # Change mysql en mariadb
+      MYSQL_PORT: ${MYSQL_PORT}
     ports:
       - "${BACKEND_PORT}:3000"
     networks:
       - app-network
     depends_on:
-      - mysql
+      - mariadb  # Change mysql en mariadb
 
   web:
     build:
