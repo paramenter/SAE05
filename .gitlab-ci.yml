@@ -1,4 +1,4 @@
-name: Docker CI/CD Pipeline
+name: Web App CI/CD Pipeline
 
 on:
   push:
@@ -9,11 +9,10 @@ on:
       - main
 
 jobs:
-  dockerize:
+  build:
     runs-on: ubuntu-latest
 
     services:
-      # Nous définissons un service Docker pour simuler l'environnement
       docker:
         image: docker:20.10.7
         options: --privileged
@@ -24,24 +23,39 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Étape 2 : Configurer Docker
-      - name: Set up Docker Buildx
+      # Étape 2 : Configurer Docker (si nécessaire)
+      - name: Set up Docker
         uses: docker/setup-buildx-action@v2
 
-      # Étape 3 : Configurer Docker Compose
-      - name: Set up Docker Compose
+      # Étape 3 : Installer les dépendances Node.js (si applicable)
+      - name: Install Node.js dependencies
         run: |
-          curl -sSL https://get.docker.com/ | sh
-          sudo apt-get install docker-compose
+          cd ./api-nodejs  # Va dans le dossier de ton application Node.js
+          npm install  # Installe les dépendances Node.js
 
-      # Étape 4 : Construire et tester les services Docker Compose
+      # Étape 4 : Installer les dépendances PHP (si applicable)
+      - name: Install PHP dependencies (Composer)
+        run: |
+          cd ./api-php  # Va dans le dossier de ton application PHP
+          curl -sS https://getcomposer.org/installer | php  # Installe Composer
+          php composer.phar install  # Installe les dépendances PHP
+
+      # Étape 5 : Construire et démarrer les conteneurs avec Docker Compose
       - name: Build and run containers with Docker Compose
         run: |
-          docker-compose -f docker-compose.yml up -d --build # Démarre les conteneurs en mode détaché et construit les images
-          docker-compose ps # Liste les conteneurs pour vérifier leur état
-          docker-compose exec node npm run test # Remplace par la commande de test de ton application Node.js
-          docker-compose exec php_apache php -l /var/www/html/index.php # Vérifie la syntaxe PHP (remplace par un test pertinent)
-          
-      # Étape 5 : Nettoyer en arrêtant et supprimant les conteneurs après les tests
+          docker-compose -f docker-compose.yml up -d --build  # Démarre les conteneurs en mode détaché et construit les images
+          docker-compose ps  # Liste les conteneurs pour vérifier leur état
+
+      # Étape 6 : Lancer des tests ou vérifier les services
+      - name: Run tests (Node.js)
+        run: |
+          docker-compose exec node npm test  # Remplace par la commande de test Node.js si applicable
+
+      - name: Run tests (PHP)
+        run: |
+          docker-compose exec php_apache php /var/www/html/vendor/bin/phpunit  # Test PHP avec PHPUnit (si applicable)
+
+      # Étape 7 : Nettoyer (arrêter et supprimer les conteneurs)
       - name: Stop and remove containers
         run: docker-compose down
+
