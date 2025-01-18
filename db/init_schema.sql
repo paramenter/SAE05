@@ -1,4 +1,5 @@
 
+
 CREATE TABLE `Abonnements` (
   `id_abonnement` int(11) NOT NULL,
   `date_demarrage` date DEFAULT NULL,
@@ -18,6 +19,7 @@ CREATE TABLE `Abonnements_Livraisons` (
   `id_abonnement` int(11) NOT NULL,
   `id_livraison` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 
 CREATE TABLE `Actions_adhérent` (
@@ -66,6 +68,7 @@ CREATE TABLE `Adhérent` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+
 CREATE TABLE `Adhérent_Paniers` (
   `id_client` int(11) NOT NULL,
   `id_panier` int(11) NOT NULL
@@ -103,6 +106,7 @@ CREATE TABLE `Espace_client` (
   `livraisons` text DEFAULT NULL,
   `factures` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 
 CREATE TABLE `Jardins_cocagne` (
@@ -157,8 +161,19 @@ CREATE TABLE `Points_depot` (
   `couleur_associee` varchar(50) DEFAULT NULL,
   `nom` varchar(100) DEFAULT NULL,
   `nom_gerant` varchar(100) DEFAULT NULL,
-  `telephone` varchar(20) DEFAULT NULL
+  `telephone` varchar(20) DEFAULT NULL,
+  `lng` double NOT NULL,
+  `lat` double NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+INSERT INTO `Points_depot` (`id_point_depot`, `adresse`, `couleur_associee`, `nom`, `nom_gerant`, `telephone`, `lng`, `lat`) VALUES
+(10, '11 rue de l\'univercite', '#a10c0c', 'sdfsf', 'sdfds', 'sdf', 6.942607, 48.289991),
+(12, '9 allée des erables', '#15a231', 'wsddsq', 'qdsdq', 'qsd', 2.326772, 48.630309),
+(13, '6 rue charpentier', '#e01aa1', 'qsd', 'qsdqs', 'qsdqsd', 2.328093, 48.632477),
+(14, '95 avenue du Marechal Juin', '#34eacb', 'sdqfsd', 'fdsfdsfds', '04.43.98.37.52', 7.192926, 43.659241),
+(15, '45 Rue de la Pompe', '#55dbdd', 'edrfg', 'erger', 'ergerg', 1.719465, 48.984275),
+(19, '66 Rue Robert Schuman', '#3685ce', 'rthrthyr', 'ytryrt', 'rtyrt', 6.134504, 49.113814);
 
 
 
@@ -168,14 +183,25 @@ CREATE TABLE `Période` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
+
 CREATE TABLE `Tournees_livraison` (
   `id_tournee` int(11) NOT NULL,
   `couleur_associee` varchar(50) DEFAULT NULL,
   `jour_livraison` date DEFAULT NULL,
   `jour_preparation` date DEFAULT NULL,
-  `numéro_dordre` int(11) DEFAULT NULL,
-  `synthese_paniers_livres` text DEFAULT NULL
+  `numero_dordre` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
+INSERT INTO `Tournees_livraison` (`id_tournee`, `couleur_associee`, `jour_livraison`, `jour_preparation`, `numero_dordre`) VALUES
+(4, '#FF0000', '2025-01-19', '2025-01-18', NULL),
+(5, '#991414', '2025-01-31', '2025-01-22', NULL),
+(6, '#181d68', '2025-01-18', '2025-01-14', 97394),
+(7, '#ff00dd', '2025-01-18', '2025-01-16', 67838492),
+(8, '#b12b2b', '2025-01-18', '2025-01-07', 89727892);
+
+
 
 CREATE TABLE `Tournees_PointsDepot` (
   `id` int(11) NOT NULL,
@@ -186,14 +212,35 @@ CREATE TABLE `Tournees_PointsDepot` (
 
 
 
+INSERT INTO `Tournees_PointsDepot` (`id`, `id_Tournees_livraison`, `id_Points_depot`, `ordre`) VALUES
+(1, 4, 13, 1),
+(2, 4, 19, 2),
+(3, 4, 14, 3),
+(4, 4, 15, 4),
+(5, 5, 13, 1),
+(6, 5, 19, 2),
+(7, 6, 13, 1),
+(8, 6, 14, 2),
+(9, 6, 19, 3),
+(10, 7, 13, 1),
+(11, 7, 14, 2),
+(12, 7, 19, 3),
+(13, 7, 10, 4),
+(14, 8, 10, 1),
+(15, 8, 19, 2);
+
+
 ALTER TABLE `Abonnements`
   ADD PRIMARY KEY (`id_abonnement`);
+
 
 ALTER TABLE `Abonnements_Livraisons`
   ADD PRIMARY KEY (`id_abonnement`,`id_livraison`);
 
 ALTER TABLE `Actions_adhérent`
   ADD PRIMARY KEY (`id_action_client`);
+
+
 ALTER TABLE `Adhesions`
   ADD PRIMARY KEY (`id_adhesion`);
 
@@ -235,4 +282,17 @@ ALTER TABLE `Période`
 
 ALTER TABLE `Tournees_livraison`
   ADD PRIMARY KEY (`id_tournee`);
+
+ALTER TABLE `Tournees_PointsDepot`
+  ADD PRIMARY KEY (`id`);
+
+ALTER TABLE `Points_depot`
+  MODIFY `id_point_depot` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+
+ALTER TABLE `Tournees_livraison`
+  MODIFY `id_tournee` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+ALTER TABLE `Tournees_PointsDepot`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 COMMIT;
+
