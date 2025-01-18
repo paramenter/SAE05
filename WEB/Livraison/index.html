@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DashBoard</title>
+  <link rel="stylesheet" href="../style/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+
+<body>
+  <header>
+    <h1 class="title">DashBoard</h1>
+    <img class="user-img" src="../data/profile.png" alt="">
+  </header>
+  <div class="app">
+    <nav>
+      <p class="title-nav">Création</p>
+      <div class="button">
+        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px">
+          <path
+            d="M240-160q-50 0-85-35t-35-85H40v-440q0-33 23.5-56.5T120-800h560v160h120l120 160v200h-80q0 50-35 85t-85 35q-50 0-85-35t-35-85H360q0 50-35 85t-85 35Zm0-80q17 0 28.5-11.5T280-280q0-17-11.5-28.5T240-320q-17 0-28.5 11.5T200-280q0 17 11.5 28.5T240-240ZM120-360h32q17-18 39-29t49-11q27 0 49 11t39 29h272v-360H120v360Zm600 120q17 0 28.5-11.5T760-280q0-17-11.5-28.5T720-320q-17 0-28.5 11.5T680-280q0 17 11.5 28.5T720-240Zm-40-200h170l-90-120h-80v120ZM360-540Z" />
+        </svg>
+        <a class="link" href="../Livraison/">Créer tournées de livraison</a>
+      </div>
+      <div class="button">
+        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px">
+          <path
+            d="M280-80q-33 0-56.5-23.5T200-160q0-33 23.5-56.5T280-240q33 0 56.5 23.5T360-160q0 33-23.5 56.5T280-80Zm400 0q-33 0-56.5-23.5T600-160q0-33 23.5-56.5T680-240q33 0 56.5 23.5T760-160q0 33-23.5 56.5T680-80ZM246-720l96 200h280l110-200H246Zm-38-80h590q23 0 35 20.5t1 41.5L692-482q-11 20-29.5 31T622-440H324l-44 80h480v80H280q-45 0-68-39.5t-2-78.5l54-98-144-304H40v-80h130l38 80Zm134 280h280-280Z" />
+        </svg>
+        <a href="../Panier/">Créer composition paniers</a>
+      </div>
+
+    </nav>
+    <section>
+      <div id="map" class="map"></div>
+      <div class="mod">
+        <div class="jour">
+          <div class="filtre"></div>
+          <div>
+            <label for="day">Choisir jour :</label>
+            <input class="day" type="date" name="" id="dateInput">
+          </div>
+        </div>
+        <div class="bouton">
+          <div class="depot-sel">
+            <form class="info-depot" action="">
+              <label for="">Adresse : </label>
+              <input id="ad" type="text">
+              <label for="">Code postal</label>
+              <input id="code" type="text">
+              <label for="">Color</label>
+              <input id="color" type="color" name="" id="">
+              <label for="">Nom : </label>
+              <input id="nom" type="text">
+              <label for="">Nom gérant : </label>
+              <input id="nomG" type="text">
+              <label for="">Téléphone : </label>
+              <input id="tel" type="text">
+            </form>
+          </div>
+          <p id="val" class="at">Tout les Valeur ne son pas bien entrée ! </p>
+          <p id="nonad" class="at">L'adresse n'es pas reconue !</p>
+          <p id="pre" class="at">Soyer plus préssis</p>
+          <p id="valid" class="va">Dépot créé ! </p>
+          <p onclick="postdepot()" class="btn">Ajouter dépot</p>
+          <p class="btn" onclick="deletedepot()">Supprimer dépot</p>
+        </div>
+        <div class="thetourne">
+          <div id="depots" class="depots"></div>
+          <form class="info-depot" id="tourneeForm">
+            <label for="couleur">Couleur : </label>
+            <input type="color" id="couleur" name="couleur" required>
+            <label for="jourLivraison">Jour livraison :</label>
+            <input type="date" id="jourLivraison" name="jourLivraison" required>
+            <label for="jourPreparation">Jour préparation</label>
+            <input type="date" id="jourPreparation" name="jourPreparation" required>
+            <label for="numero_dordre">Numéro d'ordre</label>
+            <input type="text" id="numero_dordre" name="numero_dordre" required>
+            <p class="btn" id="submitTournee">Valider</p>
+          </form>
+        </div>
+
+      </div>
+    </section>
+  </div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // Initialisation de la carte
+    const map = L.map('map').setView([48.8566, 2.3522], 7);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+    }).addTo(map);
+    const dateInput = document.getElementById('dateInput');
+    dateInput.addEventListener('change', function () {
+      filtreDiv.innerHTML = "";
+      // Envoi au serveur
+      fetch(`http://paramenter.fr:8080/api/itineraire/${dateInput.value}`, {
+        method: 'GET',
+        redirect: 'follow'
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            console.log(data)
+            console.log(data.data.length)
+            for (let i = 0; i < data.data.length; i++) {
+              console.log('salut')
+              const tour = data.data[i];
+              affT(tour)
+            }
+          } else {
+            console.error("Erreur lors de l'enregistrement :", data);
+          }
+        })
+        .catch(error => console.error("Erreur réseau :", error));
+    });
+    depots();
+    const filtreDiv = document.querySelector(".filtre");
+
+    let seldepot = null;
+    let markers = {}; // Stocke les marqueurs avec leurs informations
+    async function depots() {
+      try {
+        var requestOptions = {
+          method: 'GET',
+          redirect: 'follow'
+        };
+
+        let response = await fetch(`http://paramenter.fr:8080/api/depots`, requestOptions);
+        let data = await response.json();
+
+        for (let i = 0; i < data.depots.length; i++) {
+          const depot = data.depots[i];
+          addMarker(depot);
+        }
+
+      } catch (error) {
+        console.log('Error:', error);
+      }
+    }
+    async function getDepotTourne(id) {
+      try {
+        // Définition des options pour la requête
+        var requestOptions = {
+          method: 'GET',
+          redirect: 'follow'
+        };
+
+        // Appel à l'API
+        let response = await fetch(`http://paramenter.fr:8080/api/tournee/${id}/depots`, requestOptions);
+        let data = await response.json();
+
+        // Récupération de la div pour afficher les dépôts
+        const depotsdiv = document.getElementById('depots');
+        depotsdiv.innerHTML = ""; // Réinitialisation du contenu de la div
+        depotsList.length = 0; // Réinitialisation de la liste des dépôts
+
+        // Vérification si des données sont disponibles
+        if (data.success && Array.isArray(data.data)) {
+          data.data.forEach((seldepot, index) => {
+            // Génération d'un élément pour chaque dépôt
+            const depotdiv = `
+              <div class="depot">
+                <div>
+                  <p class="id">#${seldepot.id_point_depot}</p>
+                  <p>${seldepot.nom}</p>
+                </div>
+                <div class="icon-depot">
+                  <svg class="icon-depot-svg" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+                    width="24px" fill="#e8eaed">
+                    <path
+                      d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z" />
+                  </svg>
+                  <div class="mod-depot">
+                    <svg class="icon-depot-svg" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+                      width="24px" fill="#e8eaed">
+                      <path
+                        d="M160-760v-80h640v80H160Zm280 640v-408L336-424l-56-56 200-200 200 200-56 56-104-104v408h-80Z" />
+                    </svg>
+                    <svg class="icon-depot-svg" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+                      width="24px" fill="#e8eaed">
+                      <path
+                        d="M160-120v-80h640v80H160Zm320-160L280-480l56-56 104 104v-408h80v408l104-104 56 56-200 200Z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            `;
+
+            // Ajout de l'élément au conteneur
+            depotsdiv.innerHTML += depotdiv;
+
+            // Ajout du dépôt à la liste des dépôts
+            depotsList.push({
+              id: seldepot.id_point_depot,
+              nom: seldepot.nom,
+              ordre: index + 1
+            });
+          });
+        } else {
+          depotsdiv.innerHTML = `<p>Aucun dépôt trouvé pour cette tournée.</p>`;
+        }
+
+      } catch (error) {
+        console.log('Error:', error);
+      }
+    }
+
+    function affT(tournee) {
+
+
+      const tourneeDiv = document.createElement("div");
+      tourneeDiv.className = "tourne";
+      tourneeDiv.onclick = function () {
+        getDepotTourne(tournee.id_tournee);
+      };
+
+      tourneeDiv.innerHTML = `
+              <p class="id">#${tournee.id_tournee}</p>
+              <div class="info">
+                  <div class="color" style="background-color: ${tournee.couleur_associee};"></div>
+                  <p>Date de livraison : ${tournee.jour_livraison}</p>
+                  <p>Date de préparation : ${tournee.jour_preparation}</p>
+                  <p>Numéro d'ordre : ${tournee.numero_dordre}</p>
+              </div>
+          `;
+
+      filtreDiv.appendChild(tourneeDiv);
+      console.log('hello')
+    }
+
+    function addMarker(depotInfo) {
+      // Construire le contenu HTML de la pop-up
+      const popupContent = `
+      <div>
+          <h3>${depotInfo.nom}</h3>
+          <p><strong>Adresse :</strong> ${depotInfo.adresse}</p>
+          <p><strong>Nom du gérant :</strong> ${depotInfo.nom_gerant}</p>
+          <p><strong>Téléphone :</strong> ${depotInfo.telephone}</p>
+          <p><strong>Couleur associée :</strong> <span style="color: ${depotInfo.couleur_associee};">${depotInfo.couleur_associee}</span></p>
+          <p class="popup-btn" onclick="adddepot()">Ajouter dépot a la tournée</p>
+      </div>
+  `;
+
+      // Créer le marqueur
+      let marker = L.marker([depotInfo.lat, depotInfo.lng]).addTo(map)
+        .bindPopup(popupContent);
+
+      // Stocker le marqueur et ses informations
+      markers[depotInfo.id_point_depot] = { marker, depotInfo };
+
+      // Ajout d'un événement "click" pour le marqueur
+      marker.on('click', () => {
+        console.log(`Vous avez cliqué sur : ${depotInfo.nom}`);
+        console.log('Détails du dépôt :', depotInfo);
+        seldepot = depotInfo;
+        document.getElementById('ad').value = depotInfo.adresse;
+        document.getElementById('code').value = "";
+        document.getElementById('color').value = depotInfo.couleur_associee;
+        document.getElementById('nom').value = depotInfo.nom;
+        document.getElementById('nomG').value = depotInfo.nom_gerant;
+        document.getElementById('tel').value = depotInfo.telephone;
+      });
+    }
+
+    const depotsList = [];
+    function adddepot() {
+      if (seldepot == null) {
+        console.log("pas de depot selectionnée")
+        return
+      }
+
+      const depotsdiv = document.getElementById('depots');
+      function isDepotInDiv(depotName) {
+        const depots = depotsdiv.querySelectorAll('.depot p');
+        for (let depot of depots) {
+          if (depot.textContent === depotName) {
+            return true;
+          }
+        }
+        return false;
+      }
+      const depotdiv = `
+      <div class="depot">
+        <div>
+                <p class="id">#${seldepot.id_point_depot}</p>
+                <p>${seldepot.nom}</p>
+              </div>
+              <div class="icon-depot">
+                <svg class="icon-depot-svg" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+                  width="24px" fill="#e8eaed">
+                  <path
+                    d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z" />
+                </svg>
+                <div class="mod-depot">
+                  <svg class="icon-depot-svg" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+                    width="24px" fill="#e8eaed">
+                    <path
+                      d="M160-760v-80h640v80H160Zm280 640v-408L336-424l-56-56 200-200 200 200-56 56-104-104v408h-80Z" />
+                  </svg>
+                  <svg class="icon-depot-svg" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+                    width="24px" fill="#e8eaed">
+                    <path
+                      d="M160-120v-80h640v80H160Zm320-160L280-480l56-56 104 104v-408h80v408l104-104 56 56-200 200Z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+      `;
+      if (!isDepotInDiv(seldepot.nom)) {
+        depotsdiv.innerHTML += depotdiv;
+        depotsList.push({ id: seldepot.id_point_depot, nom: seldepot.nom, ordre: depotsList.length + 1 });
+      } else {
+        console.log(`Le dépôt "${seldepot.nom}" existe déjà et n'a pas été ajouté.`);
+      }
+    }
+    document.getElementById('submitTournee').addEventListener('click', () => {
+      const couleur = document.getElementById('couleur').value;
+      const jourLivraison = document.getElementById('jourLivraison').value;
+      const jourPreparation = document.getElementById('jourPreparation').value;
+      const numero_dordre = document.getElementById('numero_dordre').value.trim();
+
+      if (!couleur || !jourLivraison || !jourPreparation || depotsList.length === 0 || numero_dordre == "") {
+        console.log("Tous les champs doivent être remplis, et au moins un dépôt doit être ajouté.");
+        return;
+      }
+      var formdata = new FormData();
+      formdata.append("couleur_associee", couleur);
+      formdata.append("jour_livraison", jourLivraison);
+      formdata.append("jour_preparation", jourPreparation);
+      formdata.append("numero_dordre", numero_dordre);
+      formdata.append("depots", JSON.stringify(depotsList.map(depot => depot.id)));
+
+
+
+      // Envoi au serveur
+      fetch('http://paramenter.fr:8080/api/tournee', {
+        method: 'POST',
+        body: formdata,
+        redirect: 'follow'
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            console.log("Tournée enregistrée avec succès !");
+            // Réinitialiser le formulaire
+            document.getElementById('tourneeForm').reset();
+            document.getElementById('depots').innerHTML = '';
+            depotsList.length = 0; // Vider la liste des dépôts
+          } else {
+            console.error("Erreur lors de l'enregistrement :", data);
+          }
+        })
+        .catch(error => console.error("Erreur réseau :", error));
+    });
+    async function postdepot() {
+      var ad = document.getElementById('ad').value.trim();
+      var code = document.getElementById('code').value.trim();
+      var color = document.getElementById('color').value.trim();
+      var nom = document.getElementById('nom').value.trim();
+      var nomG = document.getElementById('nomG').value.trim();
+      var tel = document.getElementById('tel').value.trim();
+
+      // Validate form inputs
+      if (ad === "" || color === "" || nom === "" || nomG === "" || tel === "" || code === "") {
+        document.getElementById('val').style.display = 'block';
+        document.getElementById('nonad').style.display = 'none';
+        document.getElementById('pre').style.display = 'none';
+        document.getElementById('valid').style.display = 'none';
+        return;
+      }
+
+      var requestOptions = {
+        method: 'GET',
+        redirect: 'follow'
+      };
+
+      try {
+        // Fetch address data
+        let response = await fetch(`https://api-adresse.data.gouv.fr/search/?q=${ad}&postcode=${code}`, requestOptions);
+        let data = await response.json();
+        console.log(data)
+        if (data.features && data.features.length === 1) {
+          let coordinates = data.features[0].geometry.coordinates; // [lng, lat]
+
+          document.getElementById('val').style.display = 'none';
+          document.getElementById('nonad').style.display = 'none';
+          document.getElementById('pre').style.display = 'none';
+          document.getElementById('valid').style.display = 'block';
+
+          // Prepare form data for the POST request
+          var formdata = new FormData();
+          formdata.append("adresse", ad);
+          formdata.append("couleur_associee", color);
+          formdata.append("nom", nom);
+          formdata.append("nom_gerant", nomG);
+          formdata.append("telephone", tel);
+          formdata.append("lng", coordinates[0]); // Longitude
+          formdata.append("lat", coordinates[1]); // Latitude
+          console.log(formdata)
+          // Make the POST request
+          let postRequestOptions = {
+            method: 'POST',
+            body: formdata,
+            redirect: 'follow'
+          };
+
+          let postResponse = await fetch("http://paramenter.fr:8080/api/depot", postRequestOptions);
+          let result = await postResponse.text();
+          console.log("POST result:", result);
+          const jsonObject = {};
+          formdata.forEach((value, key) => {
+            jsonObject[key] = value;
+          });
+
+          const jsonString = JSON.stringify(jsonObject);
+          console.log(jsonString)
+          const depotInfo = JSON.parse(jsonString);
+          addMarker(depotInfo);
+        } else if (data.features && data.features.length > 1) {
+          document.getElementById('val').style.display = 'none';
+          document.getElementById('nonad').style.display = 'none';
+          document.getElementById('pre').style.display = 'block';
+          document.getElementById('valid').style.display = 'none';
+        } else {
+          document.getElementById('val').style.display = 'none';
+          document.getElementById('nonad').style.display = 'block';
+          document.getElementById('pre').style.display = 'none';
+          document.getElementById('valid').style.display = 'none';
+        }
+      } catch (error) {
+        console.log('Error:', error);
+      }
+    }
+    async function deletedepot() {
+      try {
+        let postRequestOptions = {
+          method: 'DELETE',
+          redirect: 'follow'
+        };
+
+        let postResponse = await fetch(`http://paramenter.fr:8080/api/depot/${seldepot.id_point_depot}`, postRequestOptions);
+        let result = await postResponse.text();
+        console.log("DELETE result:", result);
+      } catch (error) {
+        console.log('Error:', error);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const depotsContainer = document.querySelector("#depots");
+
+      // Fonction pour déplacer un élément
+      function moveDepot(depot, direction) {
+        if (direction === "up") {
+          const previous = depot.previousElementSibling;
+          if (previous) {
+            depotsContainer.insertBefore(depot, previous);
+          }
+        } else if (direction === "down") {
+          const next = depot.nextElementSibling;
+          if (next) {
+            depotsContainer.insertBefore(next, depot);
+          }
+        }
+      }
+
+      // Fonction pour supprimer un dépôt
+      function removeDepot(depot) {
+        depot.remove();
+      }
+
+      // Fonction pour récupérer tous les IDs dans leur ordre actuel
+      function getDepotOrder() {
+        const depots = Array.from(depotsContainer.querySelectorAll(".depot"));
+        return depots.map((depot) => depot.querySelector(".id").textContent.trim());
+      }
+
+      // Ajouter des gestionnaires d'événements
+      depotsContainer.addEventListener("click", (event) => {
+        const target = event.target;
+        const depot = target.closest(".depot");
+
+        if (!depot) return;
+
+        // Détection du bouton cliqué
+        if (target.closest(".icon-depot-svg")) {
+          const svgPath = target.closest(".icon-depot-svg").querySelector("path").getAttribute("d");
+
+          if (svgPath.includes("m256-200")) {
+            // Supprimer le dépôt (bouton "close")
+            removeDepot(depot);
+          } else if (svgPath.includes("M160-760")) {
+            // Déplacer vers le haut
+            moveDepot(depot, "up");
+          } else if (svgPath.includes("M160-120")) {
+            // Déplacer vers le bas
+            moveDepot(depot, "down");
+          }
+        }
+      });
+
+
+    });
+
+  </script>
+</body>
+
+</html>
