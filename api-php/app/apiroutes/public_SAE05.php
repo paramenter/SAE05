@@ -281,3 +281,240 @@ foreach ($data['depots'] as $index => $depotId) {
     }
 });
 
+
+$app->post('/api/legumes/repartition', function (Request $request, Response $response) {
+    try {
+        $dbconn = new DB\DBConnection();
+        $db = $dbconn->connect();
+
+        $data = $request->getParsedBody();
+        $semaine = $data['semaine'];
+
+        // Récupérer les paniers pour la semaine donnée
+        $sql = "SELECT * FROM Paniers WHERE semaine = :semaine";
+        $stmt = $db->prepare($sql);
+        $stmt->execute([':semaine' => $semaine]);
+        $paniers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $date = new DateTime();
+        $date->setISODate(date('Y'), $semaine);
+
+        $moisActuel = $date->format('n');
+
+        // Récupérer les légumes disponibles en stock et de saison
+        $sql = "SELECT * FROM Legume WHERE stock > 0";
+        $stmt = $db->prepare($sql);
+        $stmt->execute();
+        $legumes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $legumesDeSaison = [];
+        foreach ($legumes as $legume) {
+            // Vérifier si le légume est de saison pour le mois actuel
+            if (isset($legume['periode'][$moisActuel - 1]) && $legume['periode'][$moisActuel - 1] == 'o') {
+                $legumesDeSaison[] = $legume;
+            }
+        }
+
+        // Calculer le total des paniers et vérifier si on a assez de stock pour remplir tous les paniers
+        $totalPoidsNecessaire = 0;
+        foreach ($paniers as $panier) {
+            $totalPoidsNecessaire += $panier['prix']; // Prix représente la capacité de chaque panier
+        }
+
+        $totalStockDisponible = 0;
+        foreach ($legumesDeSaison as $legume) {
+            $totalStockDisponible += $legume['stock']; // Stock total des légumes de saison
+        }
+
+        // Si le stock total est insuffisant pour remplir tous les paniers
+        if ($totalStockDisponible < $totalPoidsNecessaire) {
+            $response->getBody()->write(json_encode(['success' => false, 'message' => 'Pas assez de légumes pour remplir tous les paniers'])); 
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+        }
+
+        // Répartition des légumes dans les paniers de manière uniforme
+        $legumesRestants = $legumesDeSaison;
+        foreach ($paniers as $panier) {
+            $panierLegumes = [];
+            $prixRestant = $panier['prix']; // Capacité du panier à remplir
+            $contenuPanier = [];
+
+            // Déterminer combien de légumes ajouter en fonction du type de panier
+            switch ($panier['type']) {
+                case 'Petit':
+                    $nbLegumes = 5; // 5 légumes pour les paniers petits
+                    break;
+                case 'Moyen':
+                    $nbLegumes = 7; // 7 légumes pour les paniers moyens
+                    break;
+                case 'Gros':
+                    $nbLegumes = 10; // 10 légumes pour les paniers gros
+                    break;
+                default:
+                    $nbLegumes = 5; // Par défaut, 5 légumes
+            }
+
+            // Répartition des légumes dans ce panier
+            $legumesChoisis = array_rand($legumesRestants, $nbLegumes); 
+            if ($nbLegumes == 1) {
+                $legumesChoisis = [$legumesChoisis];
+            }
+
+            $totalPrixPanier = 0;
+            foreach ($legumesChoisis as $index) {
+                $legume = $legumesRestants[$index];
+                $quantite = ($prixRestant / $nbLegumes) / $legume['prix']; 
+                $nbLegumes = $nbLegumes - 1;
+                $prixRestant -= $quantite * $legume['prix'];
+
+                if ($quantite > 0) {
+                    // Ajouter le légume au panier
+                    $sql = "INSERT INTO ContenuPanier (id_Panier, id_Legume, poids) VALUES (:id_Panier, :id_Legume, :poids)";
+                    $stmt = $db->prepare($sql);
+                    $stmt->execute([ 
+                        ':id_Panier' => $panier['id_Panier'],
+                        ':id_Legume' => $legume['id_Legume'],
+                        ':poids' => $quantite
+                    ]);
+
+                    // Réduire le stock du légume
+                    $legume['stock'] -= $quantite;
+                    $db->prepare("UPDATE Legume SET stock = :stock WHERE id_Legume = :id_Legume")
+                        ->execute([':stock' => $legume['stock'], ':id_Legume' => $legume['id_Legume']]);
+
+                    // Ajouter ce légume au contenu du panier
+                    $contenuPanier[] = [
+                        'nom' => $legume['nom'],
+                        'poids' => $quantite,
+                        'prix' => $quantite * $legume['prix']
+                    ];
+
+                    // Calcul du prix total du panier
+                    $totalPrixPanier += $quantite * $legume['prix'];
+
+                    // Si le légume est épuisé, on le retire des légumes restants
+                    if ($legume['stock'] <= 0) {
+                        unset($legumesRestants[$index]);
+                    }
+                }
+            }
+
+            
+        }
+// Réponse avec le contenu du panier
+        $responseData = ['success' => true, 'message' => 'Répartition réussi avec succès'];
+        $response->getBody()->write(json_encode($responseData));
+        $db = null;
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+    } catch (PDOException $e) {
+        // En cas d'erreur avec la base de données
+        $response->getBody()->write(json_encode([
+            'success' => false,
+            'message' => $e->getMessage()
+        ]));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+    }
+});
+
+
+
+
+
+
+$app->post('/api/paniers', function (Request $request, Response $response) {
+    $data = $request->getParsedBody();
+    $semaine = $data['semaine'];
+    $quantitePetit = $data['quantitePetit'];
+    $quantiteMoyen = $data['quantiteMoyen'];
+    $quantiteGros = $data['quantiteGros'];
+    $types = ['Petit', 'Moyen', 'Gros'];
+
+    try {
+        $dbconn = new DB\DBConnection();
+        $db = $dbconn->connect();
+
+        // Traitement des paniers pour chaque type
+        foreach (['Petit' => $quantitePetit, 'Moyen' => $quantiteMoyen, 'Gros' => $quantiteGros] as $type => $quantite) {
+            for ($i = 0; $i < $quantite; $i++) {
+                $sql = "INSERT INTO Paniers (type, prix, semaine) VALUES (:type, :prix, :semaine)";
+                $stmt = $db->prepare($sql);
+                $stmt->execute([
+                    ':type' => $type, 
+                    ':prix' => ($type === 'Petit' ? 7 : ($type === 'Moyen' ? 15 : 25)), 
+                    ':semaine' => $semaine
+                ]);
+            }
+        }
+
+        $db = null;
+        
+        // Réponse JSON
+        $responseData = ['success' => true, 'message' => 'Paniers créés avec succès'];
+        $response->getBody()->write(json_encode($responseData));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
+        
+    } catch (PDOException $e) {
+        // Erreur JSON
+        $responseData = ['success' => false, 'message' => $e->getMessage()];
+        $response->getBody()->write(json_encode($responseData));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+    }
+});
+
+
+
+
+$app->get('/api/paniers', function (Request $request, Response $response) {
+    try {
+        $dbconn = new DB\DBConnection();
+        $db = $dbconn->connect();
+
+        // Récupérer tous les paniers avec leurs informations
+        $sql = "SELECT id_Panier, type, prix, semaine FROM Paniers";
+        $stmt = $db->prepare($sql);
+        $stmt->execute();
+        $paniers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Ajouter le contenu de chaque panier et le prix total
+        foreach ($paniers as &$panier) {
+            $idPanier = $panier['id_Panier'];
+
+            // Récupérer le contenu du panier (légumes et poids)
+            $sqlContenu = "SELECT L.nom, C.poids, L.prix 
+                          FROM ContenuPanier C 
+                          JOIN Legume L ON C.id_Legume = L.id_Legume 
+                          WHERE C.id_Panier = :id_Panier";
+            $stmtContenu = $db->prepare($sqlContenu);
+            $stmtContenu->execute([':id_Panier' => $idPanier]);
+            $contenu = $stmtContenu->fetchAll(PDO::FETCH_ASSOC);
+
+            // Calculer le prix total du contenu
+            $prixTotal = 0;
+            foreach ($contenu as $legume) {
+                $prixTotal += $legume['prix'] * $legume['poids'];
+            }
+
+            // Ajouter le contenu et le prix total au panier
+            $panier['contenu'] = $contenu;
+            $panier['prixTotal'] = $prixTotal;
+        }
+
+        $db = null;
+
+        // Retourner la réponse au format JSON
+        $response->getBody()->write(json_encode([
+            'success' => true,
+            'paniers' => $paniers
+        ]));
+
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+    } catch (PDOException $e) {
+        // Gérer les erreurs et retourner un message d'erreur
+        $response->getBody()->write(json_encode([
+            'success' => false,
+            'message' => $e->getMessage()
+        ]));
+
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+    }
+});
