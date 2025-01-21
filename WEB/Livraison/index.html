@@ -7,9 +7,11 @@
   <title>DashBoard</title>
   <link rel="stylesheet" href="../style/style.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.css" />
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.min.js"></script>
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.css" />
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.min.js"></script>
 </head>
 
 <body>
@@ -102,15 +104,48 @@
       routeWhileDragging: false, // Désactive le recalcul en glissant les points
       addWaypoints: false, // Points de passage (initialement vides)
       show: false // Masque le panneau de directions
-  }).addTo(map);
+    }).addTo(map);
 
-  // Fonction pour mettre à jour l'itinéraire
-  function updateRoute(newWaypoints) {
+    // Fonction pour mettre à jour l'itinéraire
+    function updateRoute() {
+      let depotId = getAllDepotIds();
+      console.log(depotId)
+      let newWaypoints = getDepotCoordinates(depotId, depotss);
       const waypoints = newWaypoints.map(coord => L.latLng(coord[0], coord[1]));
       routeControl.setWaypoints(waypoints); // Met à jour les points de passage
-  }
-  
+    }
 
+    function getAllDepotIds() {
+      const depotsDiv = document.getElementById('depots');
+      const depotElements = depotsDiv.querySelectorAll('.depot .id'); // Sélectionne les éléments <p class="id">
+      const depotIds = Array.from(depotElements).map(depot => depot.textContent.replace('#', '').trim()); // Retire le "#" et les espaces
+      return depotIds;
+  }
+  function getDepotCoordinates(depotIds, depotsData) {
+    return depotIds.map(id => {
+        const depot = depotsData.find(d => d.id_point_depot === id); // Cherche le dépôt correspondant
+        if (depot) {
+            return [parseFloat(depot.lat), parseFloat(depot.lng)]; // Retourne les coordonnées en tant que tableau de nombres
+        }
+        return null; // Si l'ID n'existe pas, retourne null
+    }).filter(coord => coord !== null); // Filtre les valeurs nulles
+}
+    function moveItem(array, index, direction) {
+      if (direction === "up" && index > 0) {
+        // Échanger l'élément avec celui au-dessus
+        [array[index], array[index - 1]] = [array[index - 1], array[index]];
+      } else if (direction === "down" && index < array.length - 1) {
+        // Échanger l'élément avec celui en dessous
+        [array[index], array[index + 1]] = [array[index + 1], array[index]];
+      }
+      return array;
+    }
+    function deleteByIndex(array, index) {
+      if (index >= 0 && index < array.length) {
+        array.splice(index, 1); // Supprime 1 élément à l'index donné
+      }
+      return array;
+    }
     const dateInput = document.getElementById('dateInput');
     dateInput.addEventListener('change', function () {
       filtreDiv.innerHTML = "";
@@ -137,7 +172,7 @@
     });
     depots();
     const filtreDiv = document.querySelector(".filtre");
-
+    let depotss = [];
     let seldepot = null;
     let markers = {}; // Stocke les marqueurs avec leurs informations
     async function depots() {
@@ -149,7 +184,7 @@
 
         let response = await fetch(`http://paramenter.fr:8080/api/depots`, requestOptions);
         let data = await response.json();
-
+        depotss = data.depots
         for (let i = 0; i < data.depots.length; i++) {
           const depot = data.depots[i];
           addMarker(depot);
@@ -159,7 +194,6 @@
         console.log('Error:', error);
       }
     }
-    let exampleRoute = [];
     async function getDepotTourne(id) {
       try {
         // Définition des options pour la requête
@@ -176,16 +210,12 @@
         const depotsdiv = document.getElementById('depots');
         depotsdiv.innerHTML = ""; // Réinitialisation du contenu de la div
         depotsList.length = 0; // Réinitialisation de la liste des dépôts
-        
+
         // Vérification si des données sont disponibles
         if (data.success && Array.isArray(data.data)) {
-          exampleRoute = [];
           data.data.forEach((seldepot, index) => {
-            // Génération d'un élément pour chaque dépôt
-            exampleRoute.push([seldepot.lat, seldepot.lng])
-          
-          // Mettre à jour l'itinéraire avec des points exemple
-          updateRoute(exampleRoute);
+
+            // Mettre à jour l'itinéraire avec des points exemple
             const depotdiv = `
               <div class="depot">
                 <div>
@@ -224,6 +254,7 @@
               ordre: index + 1
             });
           });
+          updateRoute();
         } else {
           depotsdiv.innerHTML = `<p>Aucun dépôt trouvé pour cette tournée.</p>`;
         }
@@ -303,6 +334,7 @@
         for (let depot of depots) {
           if (depot.textContent === depotName) {
             return true;
+
           }
         }
         return false;
@@ -337,6 +369,7 @@
       if (!isDepotInDiv(seldepot.nom)) {
         depotsdiv.innerHTML += depotdiv;
         depotsList.push({ id: seldepot.id_point_depot, nom: seldepot.nom, ordre: depotsList.length + 1 });
+        updateRoute();
       } else {
         console.log(`Le dépôt "${seldepot.nom}" existe déjà et n'a pas été ajouté.`);
       }
@@ -524,6 +557,7 @@
             // Déplacer vers le bas
             moveDepot(depot, "down");
           }
+          updateRoute();
         }
       });
 
