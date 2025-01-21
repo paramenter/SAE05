@@ -93,7 +93,7 @@
         redirect: 'follow'
       };
 
-      fetch("http://paramenter.fr:8080/api/paniers", requestOptions)
+      fetch("http://localhost:8080/api/paniers", requestOptions)
         .then(response => response.json())
         .then(data => {
           if (data.success) {
@@ -118,7 +118,7 @@
         redirect: 'follow'
       };
 
-      fetch("http://paramenter.fr:8080/api/legumes/repartition", requestOptions)
+      fetch("http://localhost:8080/api/legumes/repartition", requestOptions)
         .then(response => response.json())
         .then(
           result => {

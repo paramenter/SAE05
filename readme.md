@@ -44,8 +44,8 @@ Avant de commencer, assurez-vous d'avoir installé les éléments suivants :
     WEB_PORT=81
 
     MYSQL_ROOT_PASS=superSecr3t
-    MYSQL_USER=app_user
-    MYSQL_PASS=t3rceS
+    MYSQL_USER=topuser
+    MYSQL_PASS=supermotdepasse
     MYSQL_DB=SAE05
     ```
 4. **Lancer les conteneurs Docker**
@@ -99,8 +99,8 @@ Avant de commencer, assurez-vous d'avoir installé les éléments suivants :
 
 #### Informations de connexion :
 - **Serveur** : `db_server`
-- **Utilisateur** : `app_user`
-- **Mot de passe** : `t3rceS`
+- **Utilisateur** : `topuser`
+- **Mot de passe** : `supermotdepasse`
 - **Base de données** : `SAE05`
 
 #### Actions possibles :
