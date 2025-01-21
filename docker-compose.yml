@@ -1,15 +1,5 @@
 version: '3'
 services:
-  node:
-    restart: always
-    build: 
-      context: ./api-nodejs/build
-      dockerfile: Dockerfile
-    ports:
-      - 3000:3000
-    networks:
-      - SAE05_net # Spécifie le même réseau virtuel que les autres conteneurs
-
   php_apache: # Nom du micro service (service web)
     build: # Instruction pour build l'image
       context: ./api-php/build
