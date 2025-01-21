@@ -65,6 +65,15 @@ services:
     networks:
       - SAE05_net # Spécifie le même réseau virtuel que les autres conteneurs
 
-
+  web_server: # Nouveau service pour le serveur web statique
+      image: nginx:latest
+      container_name: '${APP_NAME}-web-server' # Nom du container
+      restart: always # Politique de redémarrage lorsque le serveur redémarre
+      ports:
+        - '${WEB_PORT}:80' # Port d'accès au serveur web
+      volumes:
+        - ./WEB:/usr/share/nginx/html:ro # Serveur pour les fichiers statiques
+      networks:
+        - SAE05_net # Spécifie le même réseau virtuel que les autres conteneurs
 networks:
   SAE05_net:

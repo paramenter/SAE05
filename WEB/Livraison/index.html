@@ -6,7 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DashBoard</title>
   <link rel="stylesheet" href="../style/style.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.min.js"></script>
 </head>
 
 <body>
@@ -85,7 +88,6 @@
       </div>
     </section>
   </div>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     // Initialisation de la carte
     const map = L.map('map').setView([48.8566, 2.3522], 7);
@@ -93,6 +95,22 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
     }).addTo(map);
+
+
+    let routeControl = L.Routing.control({
+      waypoints: [],
+      routeWhileDragging: false, // Désactive le recalcul en glissant les points
+      addWaypoints: false, // Points de passage (initialement vides)
+      show: false // Masque le panneau de directions
+  }).addTo(map);
+
+  // Fonction pour mettre à jour l'itinéraire
+  function updateRoute(newWaypoints) {
+      const waypoints = newWaypoints.map(coord => L.latLng(coord[0], coord[1]));
+      routeControl.setWaypoints(waypoints); // Met à jour les points de passage
+  }
+  
+
     const dateInput = document.getElementById('dateInput');
     dateInput.addEventListener('change', function () {
       filtreDiv.innerHTML = "";
@@ -141,6 +159,7 @@
         console.log('Error:', error);
       }
     }
+    let exampleRoute = [];
     async function getDepotTourne(id) {
       try {
         // Définition des options pour la requête
@@ -157,11 +176,16 @@
         const depotsdiv = document.getElementById('depots');
         depotsdiv.innerHTML = ""; // Réinitialisation du contenu de la div
         depotsList.length = 0; // Réinitialisation de la liste des dépôts
-
+        
         // Vérification si des données sont disponibles
         if (data.success && Array.isArray(data.data)) {
+          exampleRoute = [];
           data.data.forEach((seldepot, index) => {
             // Génération d'un élément pour chaque dépôt
+            exampleRoute.push([seldepot.lat, seldepot.lng])
+          
+          // Mettre à jour l'itinéraire avec des points exemple
+          updateRoute(exampleRoute);
             const depotdiv = `
               <div class="depot">
                 <div>
