@@ -42,11 +42,34 @@
         <label for="">Semaine : </label>
         <input type="number" name="" id="semaine">
       </form>
-      <p class="btn" style="color: var(--foreground-color);">Faire repartition panier</p>
+      <p class="btn" id="repP" style="color: var(--foreground-color);">Faire repartition panier</p>
+      <br><br><br><br>
+      <form class="info-depot" action="">
+        <label for="">Semaine : </label>
+        <input id="numFil" type="number" name="" id="">
+      </form>
+      <p class="btn" id="fil" style="color: var(--foreground-color);">Filtre</p>
+      <p class="info-filtre">Nombre petit panier : -- / Nombre panier moyenne : -- / Nombre gros panier : -- </p>
     </section>
   </div>
   <script>
-    document.querySelector('.btn').addEventListener('click', function () {
+    document.querySelector('#fil').addEventListener('click', function () {
+      var requestOptions = {
+        method: 'GET',
+        redirect: 'follow'
+      };
+      
+      fetch(`http://paramenter.fr:8080/api/paniers/count/${document.getElementById('numFil').value}`, requestOptions)
+        .then(response => response.json())
+        .then(result =>{
+          console.log('hello')
+          if(result.success){
+            document.querySelector('.info-filtre').innerHTML = `Nombre petit panier : ${result.counts.Petit} / Nombre panier moyenne : ${result.counts.Moyen} / Nombre gros panier : ${result.counts.Gros} `
+          }
+        })
+        .catch(error => console.log('error', error));
+    });
+    document.querySelector('#repP').addEventListener('click', function () {
       // Récupérer les quantités des paniers à partir des champs de formulaire
       const petitPanier = document.getElementById('petit-panier').value;
       const moyenPanier = document.getElementById('moyen-panier').value;

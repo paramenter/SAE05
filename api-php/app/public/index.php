@@ -94,11 +94,8 @@ $app->get('/tests', function (Request $request, Response $response, $args) {
   return $response;
 });
 
-# include Auth route
-require __DIR__ . '/../apiroutes/auth.php';
 
 
-# include Guesses routes
 require __DIR__ . '/../apiroutes/public_SAE05.php';
 
 

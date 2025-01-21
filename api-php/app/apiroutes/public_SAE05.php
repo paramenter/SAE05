@@ -518,3 +518,50 @@ $app->get('/api/paniers', function (Request $request, Response $response) {
         return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
     }
 });
+
+$app->get('/api/paniers/count/{semaine}', function (Request $request, Response $response, $args) {
+    $semaine = $args['semaine'];
+
+    try {
+        $dbconn = new DB\DBConnection();
+        $db = $dbconn->connect();
+
+        // Requête pour compter les paniers par type pour une semaine donnée
+        $sql = "
+            SELECT type, COUNT(*) as count
+            FROM Paniers
+            WHERE semaine = :semaine
+            GROUP BY type
+        ";
+        $stmt = $db->prepare($sql);
+        $stmt->execute([':semaine' => $semaine]);
+        $counts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Formater la réponse pour inclure les types manquants avec un compteur à 0
+        $defaultCounts = [
+            'Petit' => 0,
+            'Moyen' => 0,
+            'Gros' => 0
+        ];
+        foreach ($counts as $row) {
+            $defaultCounts[$row['type']] = (int)$row['count'];
+        }
+
+        $db = null;
+
+        // Retourner les résultats
+        $response->getBody()->write(json_encode([
+            'success' => true,
+            'semaine' => $semaine,
+            'counts' => $defaultCounts
+        ]));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+
+    } catch (PDOException $e) {
+        $response->getBody()->write(json_encode([
+            'success' => false,
+            'message' => $e->getMessage()
+        ]));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+    }
+});

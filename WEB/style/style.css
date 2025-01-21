@@ -252,6 +252,10 @@ overflow: auto;
     font-size: 1.2em;
     opacity: .6;
 }
+.info-filtre{
+    color:var(--foreground-color);
+    margin-top: 10px;
+}
 :root{
     --background-color : rgb(27, 33, 44);
     --background-color-2 : rgb(23, 25, 27);
