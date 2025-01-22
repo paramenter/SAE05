@@ -8,7 +8,9 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\UploadedFileInterface as UploadFile;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7;
+use Slim\Factory\AppFactory;
 
+$app= AppFactory::create();
 
 $app->get('/api/depots', function (Request $request, Response $response) {
     try {

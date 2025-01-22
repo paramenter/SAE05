@@ -150,7 +150,7 @@
     dateInput.addEventListener('change', function () {
       filtreDiv.innerHTML = "";
       // Envoi au serveur
-      fetch(`http://paramenter.fr:8080/api/itineraire/${dateInput.value}`, {
+      fetch(`http://127.0.0.1:8082/api/itineraire/${dateInput.value}`, {
         method: 'GET',
         redirect: 'follow'
       })
@@ -182,7 +182,7 @@
           redirect: 'follow'
         };
 
-        let response = await fetch(`http://paramenter.fr:8080/api/depots`, requestOptions);
+        let response = await fetch(`http://127.0.0.1:8082/api/depots`, requestOptions);
         let data = await response.json();
         depotss = data.depots
         for (let i = 0; i < data.depots.length; i++) {
@@ -203,7 +203,7 @@
         };
 
         // Appel à l'API
-        let response = await fetch(`http://paramenter.fr:8080/api/tournee/${id}/depots`, requestOptions);
+        let response = await fetch(`http://127.0.0.1:8082/api/tournee/${id}/depots`, requestOptions);
         let data = await response.json();
 
         // Récupération de la div pour afficher les dépôts
@@ -394,7 +394,7 @@
 
 
       // Envoi au serveur
-      fetch('http://paramenter.fr:8080/api/tournee', {
+      fetch('http://127.0.0.1:8082/api/tournee', {
         method: 'POST',
         body: formdata,
         redirect: 'follow'
@@ -465,7 +465,7 @@
             redirect: 'follow'
           };
 
-          let postResponse = await fetch("http://paramenter.fr:8080/api/depot", postRequestOptions);
+          let postResponse = await fetch("http://127.0.0.1:8082/api/depot", postRequestOptions);
           let result = await postResponse.text();
           console.log("POST result:", result);
           const jsonObject = {};
@@ -499,7 +499,7 @@
           redirect: 'follow'
         };
 
-        let postResponse = await fetch(`http://paramenter.fr:8080/api/depot/${seldepot.id_point_depot}`, postRequestOptions);
+        let postResponse = await fetch(`http://127.0.0.1:8082/api/depot/${seldepot.id_point_depot}`, postRequestOptions);
         let result = await postResponse.text();
         console.log("DELETE result:", result);
       } catch (error) {
