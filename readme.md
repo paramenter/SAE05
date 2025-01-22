@@ -79,7 +79,7 @@ Avant de commencer, assurez-vous d'avoir installé les éléments suivants :
 - `GET /api/paniers` : Récupérer la liste des panier.
 - `GET /api/paniers/count/:semaine` :Récupérer le nombre de panier par type de panier. 
 
-> **Remarque** : Consultez la documentation technique pour obtenir les détails des paramètres et des réponses de l'API.
+> **Remarque** : Consultez la documentation technique pour obtenir les détails des paramètres et des réponses de l'API a adresse : http://localhost:81/docAPI.
 
 ---
 
