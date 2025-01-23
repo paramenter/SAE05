@@ -293,7 +293,7 @@ $app->delete('/api/tournee/{id}', function (Request $request, Response $response
         $db->beginTransaction();
 
         // Vérifie si l'itinéraire existe
-        $sqlCheckTournee = "SELECT COUNT(*) FROM Tournees_livraison WHERE id = :id";
+        $sqlCheckTournee = "SELECT COUNT(*) FROM Tournees_livraison WHERE id_tournee = :id";
         $stmtCheck = $db->prepare($sqlCheckTournee);
         $stmtCheck->bindParam(':id', $tourneeId);
         $stmtCheck->execute();
@@ -314,7 +314,7 @@ $app->delete('/api/tournee/{id}', function (Request $request, Response $response
         $stmtDepots->execute();
 
         // Suppression de la tournée
-        $sqlDeleteTournee = "DELETE FROM Tournees_livraison WHERE id = :id";
+        $sqlDeleteTournee = "DELETE FROM Tournees_livraison WHERE id_tournee = :id";
         $stmtTournee = $db->prepare($sqlDeleteTournee);
         $stmtTournee->bindParam(':id', $tourneeId);
         $stmtTournee->execute();

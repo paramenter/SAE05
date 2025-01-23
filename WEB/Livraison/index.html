@@ -84,6 +84,7 @@
             <label for="numero_dordre">Numéro d'ordre</label>
             <input type="text" id="numero_dordre" name="numero_dordre" required>
             <p class="btn" id="submitTournee">Valider</p>
+            <p class="btn" id="deleteTournee" onclick="deleteTournee()">Suprimer Tournee</p>
           </form>
         </div>
 
@@ -150,7 +151,7 @@
     dateInput.addEventListener('change', function () {
       filtreDiv.innerHTML = "";
       // Envoi au serveur
-      fetch(`http://127.0.0.1:8082/api/itineraire/${dateInput.value}`, {
+      fetch(`http://127.0.0.1:8080/api/itineraire/${dateInput.value}`, {
         method: 'GET',
         redirect: 'follow'
       })
@@ -182,7 +183,7 @@
           redirect: 'follow'
         };
 
-        let response = await fetch(`http://127.0.0.1:8082/api/depots`, requestOptions);
+        let response = await fetch(`http://127.0.0.1:8080/api/depots`, requestOptions);
         let data = await response.json();
         depotss = data.depots
         for (let i = 0; i < data.depots.length; i++) {
@@ -194,7 +195,25 @@
         console.log('Error:', error);
       }
     }
+    let selTournee = null;
+
+    async function deleteTournee() {
+      try {
+        let postRequestOptions = {
+          method: 'DELETE',
+          redirect: 'follow'
+        };
+
+        let postResponse = await fetch(`http://127.0.0.1:8080/api/tournee/${selTournee}`, postRequestOptions);
+        let result = await postResponse.text();
+        console.log("DELETE result:", result);
+        document.querySelector(".depots").innerHTML="";
+      } catch (error) {
+        console.log('Error:', error);
+      }
+    }
     async function getDepotTourne(id) {
+      selTournee=id
       try {
         // Définition des options pour la requête
         var requestOptions = {
@@ -203,7 +222,7 @@
         };
 
         // Appel à l'API
-        let response = await fetch(`http://127.0.0.1:8082/api/tournee/${id}/depots`, requestOptions);
+        let response = await fetch(`http://127.0.0.1:8080/api/tournee/${id}/depots`, requestOptions);
         let data = await response.json();
 
         // Récupération de la div pour afficher les dépôts
@@ -394,7 +413,7 @@
 
 
       // Envoi au serveur
-      fetch('http://127.0.0.1:8082/api/tournee', {
+      fetch('http://127.0.0.1:8080/api/tournee', {
         method: 'POST',
         body: formdata,
         redirect: 'follow'
@@ -465,7 +484,7 @@
             redirect: 'follow'
           };
 
-          let postResponse = await fetch("http://127.0.0.1:8082/api/depot", postRequestOptions);
+          let postResponse = await fetch("http://127.0.0.1:8080/api/depot", postRequestOptions);
           let result = await postResponse.text();
           console.log("POST result:", result);
           const jsonObject = {};
@@ -499,7 +518,7 @@
           redirect: 'follow'
         };
 
-        let postResponse = await fetch(`http://127.0.0.1:8082/api/depot/${seldepot.id_point_depot}`, postRequestOptions);
+        let postResponse = await fetch(`http://127.0.0.1:8080/api/depot/${seldepot.id_point_depot}`, postRequestOptions);
         let result = await postResponse.text();
         console.log("DELETE result:", result);
       } catch (error) {

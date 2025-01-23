@@ -67,7 +67,7 @@
         redirect: 'follow',
       };
   
-      fetch(`http://paramenter.fr:8080/api/paniers/semaine/${semaine}`, requestOptions)
+      fetch(`http://127.0.0.1:8080/api/paniers/semaine/${semaine}`, requestOptions)
         .then(response => response.json())
         .then(result => {
           if (result.success) {
@@ -129,7 +129,7 @@
         redirect: 'follow'
       };
 
-      fetch("http://localhost:8080/api/paniers", requestOptions)
+      fetch("http://127.0.0.1:8080/api/paniers", requestOptions)
         .then(response => response.json())
         .then(data => {
           if (data.success) {
@@ -154,7 +154,7 @@
         redirect: 'follow'
       };
 
-      fetch("http://localhost:8080/api/legumes/repartition", requestOptions)
+      fetch("http://127.0.0.1:8080/api/legumes/repartition", requestOptions)
         .then(response => response.json())
         .then(
           result => {
