@@ -256,6 +256,21 @@ overflow: auto;
     color:var(--foreground-color);
     margin-top: 10px;
 }
+.panier{
+    background-color: var(--background-color-3-bis);
+    border-radius: var(--radius);
+    padding: 10px 20px;
+    color: var(--foreground-color);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.resFilPa{
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
 :root{
     --background-color : rgb(27, 33, 44);
     --background-color-2 : rgb(23, 25, 27);

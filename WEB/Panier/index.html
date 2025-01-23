@@ -49,34 +49,70 @@
         <input id="numFil" type="number" name="" id="">
       </form>
       <p class="btn" id="fil" style="color: var(--foreground-color);">Filtre</p>
-      <p class="info-filtre">Nombre petit panier : -- / Nombre panier moyenne : -- / Nombre gros panier : -- </p>
+      <div class="resFilPa"></div>
     </section>
   </div>
   <script>
     document.querySelector('#fil').addEventListener('click', function () {
-      var requestOptions = {
+      const semaine = document.getElementById('numFil').value;
+  
+      // Vérification du champ semaine
+      if (!semaine) {
+        alert('Veuillez entrer une semaine valide.');
+        return;
+      }
+  
+      const requestOptions = {
         method: 'GET',
-        redirect: 'follow'
+        redirect: 'follow',
       };
-      
-      fetch(`http://paramenter.fr:8080/api/paniers/count/${document.getElementById('numFil').value}`, requestOptions)
+  
+      fetch(`http://paramenter.fr:8080/api/paniers/semaine/${semaine}`, requestOptions)
         .then(response => response.json())
-        .then(result =>{
-          console.log('hello')
-          if(result.success){
-            document.querySelector('.info-filtre').innerHTML = `Nombre petit panier : ${result.counts.Petit} / Nombre panier moyenne : ${result.counts.Moyen} / Nombre gros panier : ${result.counts.Gros} `
+        .then(result => {
+          if (result.success) {
+            remplirPaniers(result);
+          } else {
+            alert('Aucun panier trouvé pour cette semaine.');
+            console.log(result)
           }
         })
-        .catch(error => console.log('error', error));
+        .catch(error => {
+          console.error('Erreur réseau :', error);
+          alert('Erreur lors de la récupération des paniers.');
+        });
     });
+    function remplirPaniers(data) {
+      console.log(data);
+      const panierContainer = document.querySelector('.resFilPa');
+      panierContainer.innerHTML = ''; // Réinitialiser la liste des paniers
+    
+      if (!Array.isArray(data.paniers)) {
+        console.error('Les paniers ne sont pas dans le bon format.', data);
+        return;
+      }
+    
+      data.paniers.forEach(panier => {
+        const panierDiv = document.createElement('div');
+        panierDiv.className = 'panier';
+        panierDiv.innerHTML = `
+          <p class="id">ID Panier : ${panier.id_Panier}</p>
+          <p>Type : ${panier.type}</p>
+          <ul>
+            ${panier.contenu.map(contenu => `<li>${contenu.nom} : ${contenu.poids} kg (${Math.floor(contenu.prix)} €)</li>`).join('')}
+          </ul>
+          <p>Valeur Totale : ${panier.prixTotal} €</p>
+        `;
+        panierContainer.appendChild(panierDiv);
+      });
+    }
+    
     document.querySelector('#repP').addEventListener('click', function () {
-      // Récupérer les quantités des paniers à partir des champs de formulaire
       const petitPanier = document.getElementById('petit-panier').value;
       const moyenPanier = document.getElementById('moyen-panier').value;
       const grosPanier = document.getElementById('gros-panier').value;
       const semaine = document.getElementById('semaine').value;
 
-      // Vérifier que les quantités sont des nombres valides
       if (petitPanier < 0 || moyenPanier < 0 || grosPanier < 0) {
         alert('Veuillez entrer des quantités valides pour les paniers.');
         return;

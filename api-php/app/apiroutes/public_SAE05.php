@@ -283,6 +283,65 @@ foreach ($data['depots'] as $index => $depotId) {
     }
 });
 
+$app->delete('/api/tournee/{id}', function (Request $request, Response $response, array $args) {
+    $tourneeId = $args['id']; // Récupère l'ID de la tournée à partir des paramètres de l'URL
+
+    try {
+        // Connexion à la base de données
+        $dbconn = new DB\DBConnection();
+        $db = $dbconn->connect();
+        $db->beginTransaction();
+
+        // Vérifie si l'itinéraire existe
+        $sqlCheckTournee = "SELECT COUNT(*) FROM Tournees_livraison WHERE id = :id";
+        $stmtCheck = $db->prepare($sqlCheckTournee);
+        $stmtCheck->bindParam(':id', $tourneeId);
+        $stmtCheck->execute();
+        $tourneeExists = $stmtCheck->fetchColumn();
+
+        if (!$tourneeExists) {
+            $response->getBody()->write(json_encode([
+                "success" => false,
+                "message" => "Tournée non trouvée"
+            ]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+        }
+
+        // Suppression des points de dépôt associés
+        $sqlDeleteDepots = "DELETE FROM Tournees_PointsDepot WHERE id_Tournees_livraison = :id";
+        $stmtDepots = $db->prepare($sqlDeleteDepots);
+        $stmtDepots->bindParam(':id', $tourneeId);
+        $stmtDepots->execute();
+
+        // Suppression de la tournée
+        $sqlDeleteTournee = "DELETE FROM Tournees_livraison WHERE id = :id";
+        $stmtTournee = $db->prepare($sqlDeleteTournee);
+        $stmtTournee->bindParam(':id', $tourneeId);
+        $stmtTournee->execute();
+
+        // Commit de la transaction
+        $db->commit();
+        $db = null;
+
+        // Réponse en cas de succès
+        $response->getBody()->write(json_encode([
+            "success" => true,
+            "message" => "Tournée supprimée avec succès"
+        ]));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+
+    } catch (PDOException $e) {
+        // Rollback en cas d'erreur
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        $response->getBody()->write(json_encode([
+            "success" => false,
+            "message" => $e->getMessage()
+        ]));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+    }
+});
 
 $app->post('/api/legumes/repartition', function (Request $request, Response $response) {
     try {
@@ -367,7 +426,7 @@ $app->post('/api/legumes/repartition', function (Request $request, Response $res
                 $legume = $legumesRestants[$index];
                 $quantite = ($prixRestant / $nbLegumes) / $legume['prix']; 
                 $nbLegumes = $nbLegumes - 1;
-                $prixRestant -= $quantite * $legume['prix'];
+                $prixRestant -= $quantite * $legume['prix'] + 0.2;
 
                 if ($quantite > 0) {
                     // Ajouter le légume au panier
@@ -559,6 +618,61 @@ $app->get('/api/paniers/count/{semaine}', function (Request $request, Response $
         ]));
         return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 
+    } catch (PDOException $e) {
+        $response->getBody()->write(json_encode([
+            'success' => false,
+            'message' => $e->getMessage()
+        ]));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+    }
+});
+
+$app->get('/api/paniers/semaine/{semaine}', function (Request $request, Response $response, $args) {
+    $semaine = $args['semaine'];
+
+    try {
+        $dbconn = new DB\DBConnection();
+        $db = $dbconn->connect();
+
+        // Récupérer tous les paniers pour la semaine donnée
+        $sql = "SELECT id_Panier, type, prix, semaine FROM Paniers WHERE semaine = :semaine";
+        $stmt = $db->prepare($sql);
+        $stmt->execute([':semaine' => $semaine]);
+        $paniers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Ajouter le contenu et le prix total de chaque panier
+        foreach ($paniers as &$panier) {
+            $idPanier = $panier['id_Panier'];
+
+            // Récupérer le contenu du panier (légumes et poids)
+            $sqlContenu = "SELECT L.nom, C.poids, L.prix 
+                           FROM ContenuPanier C 
+                           JOIN Legume L ON C.id_Legume = L.id_Legume 
+                           WHERE C.id_Panier = :id_Panier";
+            $stmtContenu = $db->prepare($sqlContenu);
+            $stmtContenu->execute([':id_Panier' => $idPanier]);
+            $contenu = $stmtContenu->fetchAll(PDO::FETCH_ASSOC);
+
+            // Calculer le prix total du contenu
+            $prixTotal = 0;
+            foreach ($contenu as $legume) {
+                $prixTotal += $legume['prix'] * $legume['poids'];
+            }
+
+            // Ajouter le contenu et le prix total au panier
+            $panier['contenu'] = $contenu;
+            $panier['prixTotal'] = $prixTotal;
+        }
+
+        $db = null;
+
+        // Retourner les résultats
+        $response->getBody()->write(json_encode([
+            'success' => true,
+            'semaine' => $semaine,
+            'paniers' => $paniers
+        ]));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
     } catch (PDOException $e) {
         $response->getBody()->write(json_encode([
             'success' => false,
